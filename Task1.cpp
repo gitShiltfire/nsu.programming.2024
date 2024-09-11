@@ -92,14 +92,15 @@ public:
         }
     }
 
-    [[nodiscard]] int getN() const { return _n; }
-
-    [[nodiscard]] int **getData() const { return _data; }
+    ~Matrix() {  // Destructor
+        for (int i = 0; i < _n; ++i) delete[] _data[i];
+        if (_n > 0) delete[] _data;
+    }
 
     // Overloading operators
     Matrix operator+(const Matrix &m) {
-        if (_n != m.getN()) throw invalid_argument("Incorrect sizes of matrices by 'operator+'");
-        int **mData = m.getData(), **newData = new int *[_n];
+        if (_n != m._n) throw invalid_argument("Incorrect sizes of matrices by 'operator+'");
+        int **mData = m._data, **newData = new int *[_n];
         for (int i = 0; i < _n; ++i) {
             newData[i] = new int[_n];
             for (int j = 0; j < _n; ++j) newData[i][j] = _data[i][j] + mData[i][j];
@@ -108,8 +109,8 @@ public:
     }
 
     Matrix operator-(const Matrix &m) {
-        if (_n != m.getN()) throw invalid_argument("Incorrect sizes of matrices by 'operator-'");
-        int **mData = m.getData(), **newData = new int *[_n];
+        if (_n != m._n) throw invalid_argument("Incorrect sizes of matrices by 'operator-'");
+        int **mData = m._data, **newData = new int *[_n];
         for (int i = 0; i < _n; ++i) {
             newData[i] = new int[_n];
             for (int j = 0; j < _n; ++j) newData[i][j] = _data[i][j] - mData[i][j];
@@ -118,8 +119,8 @@ public:
     }
 
     Matrix operator*(const Matrix &m) {
-        if (_n != m.getN()) throw invalid_argument("Incorrect sizes of matrices by 'operator*'");
-        int **mData = m.getData(), **newData = new int *[_n];
+        if (_n != m._n) throw invalid_argument("Incorrect sizes of matrices by 'operator*'");
+        int **mData = m._data, **newData = new int *[_n];
         for (int i = 0; i < _n; ++i) {
             newData[i] = new int[_n];
             for (int j = 0; j < _n; ++j) {
@@ -132,8 +133,8 @@ public:
     }
 
     bool operator==(Matrix &m) {
-        if (_n != m.getN()) throw invalid_argument("Incorrect sizes of matrices by operator '=='");
-        int **mData = m.getData();
+        if (_n != m._n) throw invalid_argument("Incorrect sizes of matrices by operator '=='");
+        int **mData = m._data;
         for (int i = 0; i < _n; ++i) {
             for (int j = 0; j < _n; ++j) {
                 if (_data[i][j] != mData[i][j]) return false;
@@ -178,7 +179,7 @@ public:
         return Matrix{_n, newData};
     }
 
-    void printData() {  // print _data of matrix
+    void print() {  // print _data of matrix
         for (int i = 0; i < _n; ++i) {
             for (int j = 0; j < _n; ++j) cout << _data[i][j] << ' ';
             cout << '\n';
@@ -206,44 +207,40 @@ void additional_task() {
 
     cout << "\nFor rows\n";
     auto a = m[0];
-    m.printData();
+    m.print();
     cout << "Second element of first row = 9\n";
     a[1] = 9;
     cout << "Result of changing:\n";
-    m.printData();
+    m.print();
 
     cout << "\nFor columns\n";
     auto b = m(0);
-    m.printData();
+    m.print();
     cout << "Second element of first column = 9\n";
     b[1] = 9;
     cout << "Result of it:\n";
-    m.printData();
+    m.print();
 }
 
 void main_task() {
     try {
         int N, k;
         cin >> N >> k;
-        Matrix A, B, C, D, K{N, k};
-
+        Matrix A{N}, B{N}, C{N}, D{N}, K{N, k};
         for (int i = 0; i < 4; ++i) {
-            int **data = new int *[N];
             for (int j = 0; j < N; ++j) {
-                data[j] = new int[N];
                 for (int q = 0; q < N; ++q) {
-                    int u;
-                    cin >> u;
-                    data[j][q] = u;
+                    int v;
+                    cin >> v;
+                    if (i == 0) A[j][q] = v;
+                    else if (i == 1) B[j][q] = v;
+                    else if (i == 2) C[j][q] = v;
+                    else D[j][q] = v;
                 }
             }
-            if (i == 0) A = Matrix{N, data, N};
-            else if (i == 1) B = Matrix{N, data, N};
-            else if (i == 2) C = Matrix{N, data, N};
-            else D = Matrix{N, data, N};
         }
 
-        ((A + B * C.transpose() + K) * D.transpose()).printData();
+        ((A + B * C.transpose() + K) * D.transpose()).print();
 
     } catch (invalid_argument &e) {
         cerr << e.what() << endl;
