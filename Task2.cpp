@@ -28,7 +28,13 @@ int extract_var_from_string(string &s, string &v) {  // Extract value of var fro
     }
 }
 
+enum ExpressionType {
+    etn, etv, eta, ets, etm, etd
+};
+
 class Expression {  // Abstract class
+private:
+    ExpressionType _type;
 protected:
     stack<Expression *> _allocated;
 
@@ -40,26 +46,30 @@ public:
         }
     }
 
+    virtual ExpressionType getType() { return _type; }
+
     virtual Expression *derivative(string s) = 0;
 
-    virtual void printWithoutN() = 0;
+    virtual string toString() = 0;
 
     void print() {  // For inheritance only
-        printWithoutN();
-        cout << '\n';
+        cout << toString() << endl;
     }
 
     virtual int eval(string s) = 0;
+
+    virtual bool isVarInExp() { return false; }
 };
 
 class Number : public Expression {
 private:
     int _n;
+    ExpressionType _type;
 
-    void printWithoutN() override { cout << _n; }
+    string toString() override { return to_string(_n); }
 
 public:
-    explicit Number(const int &n = 0) : _n(n) {}
+    explicit Number(const int &n = 0) : _n(n), _type(etn) {}
 
     Number *derivative(string s) override {
         _allocated.push(new Number{0});
@@ -67,16 +77,21 @@ public:
     }
 
     int eval(string s) override { return _n; }
+
+    [[nodiscard]] int getN() const { return _n; }
+
+    ExpressionType getType() override { return _type; }
 };
 
 class Variable : public Expression {
 private:
     string _s;
+    ExpressionType _type;
 
-    void printWithoutN() override { cout << _s; }
+    string toString() override { return _s; }
 
 public:
-    explicit Variable(string s) : _s(std::move(s)) {}
+    explicit Variable(string s) : _s(std::move(s)), _type(etv) {}
 
     Number *derivative(string s) override {
         _allocated.push(new Number{_s == s ? 1 : 0});
@@ -84,23 +99,24 @@ public:
     }
 
     int eval(string s) override { return extract_var_from_string(s, _s); }
+
+    bool isVarInExp() override { return true; }
+
+    string getS() { return _s; }
+
+    ExpressionType getType() override { return _type; }
 };
 
 class Add : public Expression {
 private:
     Expression *_first;
     Expression *_second;
+    ExpressionType _type;
 
-    void printWithoutN() override {
-        cout << '(';
-        _first->printWithoutN();
-        cout << '+';
-        _second->printWithoutN();
-        cout << ')';
-    }
+    string toString() override { return "(" + _first->toString() + "+" + _second->toString() + ")"; }
 
 public:
-    Add(Expression *first, Expression *second) : _first(first), _second(second) {}
+    Add(Expression *first, Expression *second) : _first(first), _second(second), _type(eta) {}
 
     Add *derivative(string s) override {
         _allocated.push(new Add{_first->derivative(s), _second->derivative(s)});
@@ -108,23 +124,26 @@ public:
     }
 
     int eval(string s) override { return _first->eval(s) + _second->eval(s); }
+
+    bool isVarInExp() override { return _first->isVarInExp() || _second->isVarInExp(); }
+
+    Expression *getFirst() { return _first; }
+
+    Expression *getSecond() { return _second; }
+
+    ExpressionType getType() override { return _type; }
 };
 
 class Sub : public Expression {
 private:
     Expression *_first;
     Expression *_second;
+    ExpressionType _type;
 
-    void printWithoutN() override {
-        cout << '(';
-        _first->printWithoutN();
-        cout << '-';
-        _second->printWithoutN();
-        cout << ')';
-    }
+    string toString() override { return "(" + _first->toString() + "-" + _second->toString() + ")"; }
 
 public:
-    Sub(Expression *first, Expression *second) : _first(first), _second(second) {}
+    Sub(Expression *first, Expression *second) : _first(first), _second(second), _type(ets) {}
 
     Sub *derivative(string s) override {
         _allocated.push(new Sub{_first->derivative(s), _second->derivative(s)});
@@ -132,23 +151,26 @@ public:
     }
 
     int eval(string s) override { return _first->eval(s) - _second->eval(s); }
+
+    bool isVarInExp() override { return _first->isVarInExp() || _second->isVarInExp(); }
+
+    Expression *getFirst() { return _first; }
+
+    Expression *getSecond() { return _second; }
+
+    ExpressionType getType() override { return _type; }
 };
 
 class Mul : public Expression {
 private:
     Expression *_first;
     Expression *_second;
+    ExpressionType _type;
 
-    void printWithoutN() override {
-        cout << '(';
-        _first->printWithoutN();
-        cout << '*';
-        _second->printWithoutN();
-        cout << ')';
-    }
+    string toString() override { return "(" + _first->toString() + "*" + _second->toString() + ")"; }
 
 public:
-    Mul(Expression *first, Expression *second) : _first(first), _second(second) {}
+    Mul(Expression *first, Expression *second) : _first(first), _second(second), _type(etm) {}
 
     Add *derivative(string s) override {
         _allocated.push(new Add{
@@ -158,24 +180,27 @@ public:
         return (Add *) _allocated.top();
     }
 
-    int eval(string s) override { return _first->eval(s) - _second->eval(s); }
+    int eval(string s) override { return _first->eval(s) * _second->eval(s); }
+
+    bool isVarInExp() override { return _first->isVarInExp() || _second->isVarInExp(); }
+
+    Expression *getFirst() { return _first; }
+
+    Expression *getSecond() { return _second; }
+
+    ExpressionType getType() override { return _type; }
 };
 
 class Div : public Expression {
 private:
     Expression *_first;
     Expression *_second;
+    ExpressionType _type;
 
-    void printWithoutN() override {
-        cout << '(';
-        _first->printWithoutN();
-        cout << '/';
-        _second->printWithoutN();
-        cout << ')';
-    }
+    string toString() override { return "(" + _first->toString() + "/" + _second->toString() + ")"; }
 
 public:
-    Div(Expression *first, Expression *second) : _first(first), _second(second) {}
+    Div(Expression *first, Expression *second) : _first(first), _second(second), _type(ExpressionType::etd) {}
 
     Div *derivative(string s) override {
         _allocated.push(new Div{
@@ -188,7 +213,15 @@ public:
         return (Div *) _allocated.top();
     }
 
-    int eval(string s) override { return _first->eval(s) - _second->eval(s); }
+    int eval(string s) override { return _first->eval(s) / _second->eval(s); }
+
+    bool isVarInExp() override { return _first->isVarInExp() || _second->isVarInExp(); }
+
+    Expression *getFirst() { return _first; }
+
+    Expression *getSecond() { return _second; }
+
+    ExpressionType getType() override { return _type; }
 };
 
 void example() {
@@ -261,24 +294,25 @@ void main_task() {
     deallocating(allocated);
 }
 
-bool isOperation(char c) { return c == '+' || c == '-' || c == '*' || c == '/'; }
+bool isOperation(char c) { return c == '+' || c == '-' || c == '*' || c == '/'; }  // For additional task 1
 
-bool isDigit(char c) { return '0' <= c && c <= '9'; }
+bool isDigit(char c) { return '0' <= c && c <= '9'; }  // For additional task 1
 
-bool isCharOfVar(char c) { return !isOperation(c) && !isDigit(c) && c != '(' && c != ')'; }
+bool isCharOfVar(char c) { return !isOperation(c) && !isDigit(c) && c != '(' && c != ')'; }  // For additional task 1
 
-enum MonomialTypes {
-    number, variable, operation
+enum MonomialTypes {  // For additional task 1
+    num, var, operation
 };
 
-string adding_brackets(const string &s) {
+string adding_brackets(const string &s) {  // Additional task 1
     struct Monomial {
         string value;
         double priority;
         MonomialTypes type;
         int unique_priority;
 
-        Monomial(string v, MonomialTypes t, double p = -1, int u = 0) : value(std::move(v)), type(t), priority(p) {}
+        Monomial(string v, MonomialTypes t, double p = -1) : value(std::move(v)), type(t), priority(p),
+                                                             unique_priority(0) {}
     };
     // Converting an expression into a convenient form
     vector<Monomial> monomials;
@@ -291,11 +325,11 @@ string adding_brackets(const string &s) {
         } else if (isDigit(s[i])) {
             int n = s[i] - '0';
             for (; i + 1 < s.size() && '0' <= s[i + 1] && s[i + 1] <= '9'; ++i) n = n * 10 + (s[i + 1] - '0');
-            monomials.emplace_back(to_string(n), number);
+            monomials.emplace_back(to_string(n), num);
         } else {  // Variable
             int i_start = i;
             for (; i + 1 < s.size() && isCharOfVar(s[i + 1]); ++i);
-            monomials.emplace_back(s.substr(i_start, i - i_start + 1), variable);
+            monomials.emplace_back(s.substr(i_start, i - i_start + 1), var);
         }
     }
     // We define the order of operations
@@ -330,15 +364,70 @@ string adding_brackets(const string &s) {
     return l.back().first;  // l.size() == 1
 }
 
+Expression *simplify(Expression *e, stack<Expression *> &allocated) {  // Additional task 2
+    ExpressionType type = e->getType();
+    if (!e->isVarInExp()) {  // Additional task 2.a
+        if (type == etn) return e;
+        allocated.push(new Number{e->eval("")});
+        return allocated.top();
+    }
+    if (type == etm) {
+        Mul *me = (Mul *) e;
+        // Additional task 2.c
+        Expression *exp = me->getFirst();
+        if (exp->getType() == etn && exp->eval("") == 0) {
+            allocated.push(new Number{0});
+            return allocated.top();
+        }
+        exp = me->getSecond();
+        if (exp->getType() == etn && exp->eval("") == 0) {
+            allocated.push(new Number{0});
+            return allocated.top();
+        }
+        // Additional task 2.d
+        if (exp->getType() == etn && exp->eval("") == 1) return me->getFirst();
+        exp = me->getFirst();
+        if (exp->getType() == etn && exp->eval("") == 1) return me->getSecond();
+        // Else
+        allocated.push(new Mul{simplify(me->getFirst(), allocated),
+                               simplify(me->getSecond(), allocated)});
+    } else if (type == ets) {
+        Sub *se = (Sub *) e;
+        if (se->getFirst()->toString() == se->getSecond()->toString()) {
+            allocated.push(new Number{0});
+            return allocated.top();
+        }
+        // Else
+        allocated.push(new Sub{simplify(se->getFirst(), allocated),
+                               simplify(se->getSecond(), allocated)});
+    } else if (type == etn) {
+        auto *ne = (Number *) e;
+        allocated.push(new Number{ne->getN()});
+    } else if (type == etv) {
+        auto *ve = (Variable *) e;
+        allocated.push(new Variable{ve->getS()});
+    } else if (type == eta) {
+        auto *ae = (Add *) e;
+        allocated.push(new Add(simplify(ae->getFirst(), allocated),
+                               simplify(ae->getSecond(), allocated)));
+    } else {  // Div
+        auto *de = (Div *) e;
+        allocated.push(new Div{simplify(de->getFirst(), allocated),
+                               simplify(de->getSecond(), allocated)});
+    }
+    return allocated.top();
+}
+
 int main() {
     stack<Expression *> allocated;
     string s;
     cin >> s;
-    s = adding_brackets(s);
+    s = adding_brackets(s);  // Additional task 1
 
     Expression *e = extract_expression(s, allocated);
     Expression *de = e->derivative("x");
     de->print();
+    // simplify(e, allocated)->print();  // 2*0+x*2-3 -> ((0+(x*2))-3)
 
     deallocating(allocated);
     return 0;
