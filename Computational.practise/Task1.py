@@ -1,11 +1,23 @@
-def print_matrix(m: list):
-    print('⌈', *m[0], '⌉')
-    for line in m[1:-1]:
-        print('|', *line, '|')
-    print('⌊', *m[-1], '⌋')
+def print_matrix(m: list):  # Print beautiful matrix
+    len_of_element = max([len(str(x)) for line in m for x in line])
+    for i in range(len(m)):
+        c = '|'
+        if i == 0:
+            c = '⌈'
+        elif i + 1 == len(m):
+            c = '⌊'
+        print(c, end='')
+        for e in m[i][:-1]:
+            e = str(e)
+            print(e + ' ' * (len_of_element - len(e) + 2), end='')
+        if i == 0:
+            c = '⌉'
+        elif i + 1 == len(m):
+            c = '⌋'
+        print(str(m[i][-1]) + c)
 
 
-def det(m: list):
+def det(m: list):  # Return determinant of matrix m
     if len(m) == 1:
         return m[0][0]
     res = 0
@@ -14,7 +26,7 @@ def det(m: list):
     return res
 
 
-def index_maximum(m: list, k: int):  # return index of row with maximum element in kth column
+def index_maximum(m: list, k: int):  # Return index of row with maximum element in kth column
     res = k
     maximum = abs(m[k][k])
     for i in range(k + 1, len(m)):
@@ -24,7 +36,7 @@ def index_maximum(m: list, k: int):  # return index of row with maximum element 
     return res
 
 
-def the_gauss_method(A: list, b: list):
+def the_gauss_method(A: list, b: list):  # Gauss method with column maximum selection
     n = len(A)
     m = [[A[i][j] if j < len(A) else b[i] for j in range(len(A) + 1)] for i in range(len(A))]  # m = [A|b]
     # We convert the matrix A to the upper triangular form
@@ -41,7 +53,7 @@ def the_gauss_method(A: list, b: list):
     x = [0 for _ in range(n)]
     for i in range(n - 1, -1, -1):
         x[i] = (m[i][n] - sum([m[i][j] * x[j] for j in range(i + 1, n)])) / m[i][i]
-    # Print answer
+    # Printing the response with an accuracy of 8 decimal
     print(f'x = ({x[0]:.{8}f}', end='')
     for e in x[1:]:
         print(f' {e:.{8}f}', end='')
