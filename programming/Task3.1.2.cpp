@@ -1,15 +1,14 @@
 /*
- * version 1.2
+ * version 1.3
  * HashMap
  * Main task out
- * --Iterator
+ * Iterator
  * --Additional task 1
  */
 
 #include <iostream>
 
 using namespace std;
-
 
 template<typename T>
 class Vector {
@@ -61,6 +60,27 @@ public:
     }
 };
 
+template<typename T>
+class MyIterator : public iterator<input_iterator_tag, T> {
+    T **p;
+
+public:
+    explicit MyIterator(T **p) : p(p) {}
+
+    MyIterator(const MyIterator &it) : p(it.p) {}
+
+    bool operator!=(MyIterator const &other) const { return p != other.p; }
+
+    bool operator==(MyIterator const &other) const { return p == other.p; }
+
+    typename MyIterator::reference operator*() const { return **p; }
+
+    MyIterator &operator++() {
+        while ((*(++p))->null);
+        return *this;
+    }
+};
+
 
 template<typename K, typename V>
 class HashMap {
@@ -71,8 +91,10 @@ class HashMap {
         K key;
         V value;
         bool deleted;
+        bool null;
 
-        explicit Node(const K &k, const V &v) : key(k), value(v), deleted(false) {}
+        explicit Node(const K &k = K{}, const V &v = V{}, const bool &n = true) :
+                key(k), value(v), deleted(false), null(n) {}
     };
 
     Node **arr;
@@ -85,15 +107,16 @@ class HashMap {
         memory *= 2;
         general_size = 0;
         active_size = 0;
-        Node **arr2 = new Node *[memory];
-        for (int i = 0; i < memory; ++i)
-            arr2[i] = nullptr;
+        Node **arr2 = new Node *[memory + 1];
+        for (int i = 0; i < memory + 1; ++i)
+            arr2[i] = new Node;
+        arr2[memory]->null = false;
         swap(arr, arr2);
         for (int i = 0; i < past_memory; ++i) {
-            if (arr2[i] && !arr2[i]->deleted)
+            if (!arr2[i]->null && !arr2[i]->deleted)
                 add(arr2[i]->key, arr2[i]->value);
         }
-        for (int i = 0; i < past_memory; ++i)
+        for (int i = 0; i < past_memory + 1; ++i)
             if (arr2[i])
                 delete arr2[i];
         delete[] arr2;
@@ -102,15 +125,16 @@ class HashMap {
     void rehash() {
         general_size = 0;
         active_size = 0;
-        Node **arr2 = new Node *[memory];
-        for (int i = 0; i < memory; ++i)
-            arr2[i] = nullptr;
+        Node **arr2 = new Node *[memory + 1];
+        for (int i = 0; i < memory + 1; ++i)
+            arr2[i] = new Node;
+        arr2[memory]->null = false;
         swap(arr, arr2);
         for (int i = 0; i < memory; ++i) {
-            if (arr2[i] && !arr2[i]->deleted)
+            if (!arr2[i]->null && !arr2[i]->deleted)
                 add(arr2[i]->key, arr2[i]->value);
         }
-        for (int i = 0; i < memory; ++i)
+        for (int i = 0; i < memory + 1; ++i)
             if (arr2[i])
                 delete arr2[i];
         delete[] arr2;
@@ -121,13 +145,14 @@ public:
         memory = default_size;
         active_size = 0;
         general_size = 0;
-        arr = new Node *[memory];
-        for (int i = 0; i < memory; ++i)
-            arr[i] = nullptr;
+        arr = new Node *[memory + 1];
+        for (int i = 0; i < memory + 1; ++i)
+            arr[i] = new Node;
+        arr[memory]->null = false;
     }
 
     ~HashMap() {
-        for (int i = 0; i < memory; ++i)
+        for (int i = 0; i < memory + 1; ++i)
             if (arr[i])
                 delete arr[i];
         delete[] arr;
@@ -139,7 +164,7 @@ public:
         int h = hash<K>{}(key) % memory;
         int i = 0;
         int first_deleted = -1;
-        while (arr[h] != nullptr && i < memory) {
+        while (!arr[h]->null && i < memory) {
             if (arr[h]->key == key && !arr[h]->deleted) {
                 if (arr[h]->value == value) return false;
                 arr[h]->value = value;
@@ -150,7 +175,7 @@ public:
             ++i;
         }
         if (first_deleted == -1) {
-            arr[h] = new Node(key, value);
+            arr[h] = new Node(key, value, false);
             ++general_size;
         } else {
             arr[first_deleted]->key = key;
@@ -163,7 +188,7 @@ public:
     bool remove(const K &key) {
         int h = hash<K>{}(key) % memory;
         int i = 0;
-        while (arr[h] != nullptr && i < memory) {
+        while (!arr[h]->null && i < memory) {
             if (arr[h]->key == key && !arr[h]->deleted) {
                 arr[h]->deleted = true;
                 --active_size;
@@ -178,7 +203,7 @@ public:
     V operator[](const K &key) {
         int h = hash<K>{}(key) % memory;
         int i = 0;
-        while (arr[h] != nullptr && i < memory) {
+        while (!arr[h]->null && i < memory) {
             if (arr[h]->key == key && !arr[h]->deleted)
                 return arr[h]->value;
             h = (h + 1) % memory;
@@ -187,11 +212,9 @@ public:
         return nullptr;
     }
 
-    void print() const {
-        for (int i = 0; i < memory; ++i) {
-            if (arr[i] != nullptr) {
-                cout << arr[i]->key << ' ' << arr[i]->value << ' ' << (arr[i]->deleted ? "(deleted)" : "") << endl;
-            }
+    void print() {
+        for (const Node &it: *this) {
+            cout << it.key << ' ' << it.value << ' ' << (it.deleted ? "(deleted)" : "") << endl;
         }
     }
 
@@ -200,7 +223,7 @@ public:
     [[nodiscard]] int getUnique() const {
         Vector<V> v;
         for (int i = 0; i < memory; ++i) {
-            if (arr[i] != nullptr && !arr[i]->deleted) {
+            if (!arr[i]->null && !arr[i]->deleted) {
                 bool found = false;
                 for (int j = 0; j < v.getSize(); ++j) {
                     if (v[j] == arr[i]->value) {
@@ -214,6 +237,24 @@ public:
         }
         return v.getSize();
     }
+
+    MyIterator<Node> begin() {
+        for (int i = 0; i < memory; ++i)
+            if (!arr[i]->null && !arr[i]->deleted)
+                return MyIterator<Node>(&arr[i]);
+        return end();
+    }
+
+    MyIterator<Node> end() { return MyIterator<Node>(&arr[memory]); }
+
+    [[nodiscard]] MyIterator<const Node> begin() const {
+        for (int i = 0; i < memory; ++i)
+            if (!arr[i]->null && !arr[i]->deleted)
+                return MyIterator<const Node>(arr);
+        return end();
+    }
+
+    [[nodiscard]] MyIterator<const Node> end() const { return MyIterator<const Node>(&arr[memory]); }
 };
 
 
@@ -233,5 +274,6 @@ int main() {
         }
     }
     cout << hashMap.getSize() << ' ' << hashMap.getUnique() << endl;
+    // hashMap.print();
     return 0;
 }
