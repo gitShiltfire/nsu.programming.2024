@@ -1,5 +1,5 @@
 /*
- * version 1.1
+ * version 1.2
  * HashMap
  * Main task out
  * --Iterator
@@ -7,7 +7,6 @@
  */
 
 #include <iostream>
-#include <fstream>
 
 using namespace std;
 
