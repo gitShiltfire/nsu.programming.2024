@@ -1,32 +1,76 @@
-def print_matrix(m: list):  # Print beautiful matrix
-    len_of_element = max([len(str(x)) for line in m for x in line])
+"""
+version: 1.1
+Method Gauss
+Determinant
+Inverse matrix
+--Run-throw method
+--Reflection method
+"""
+
+
+def simplify_number(n: float, accuracy=8) -> str:
+    n = str(int(n * 10 ** accuracy) / 10 ** accuracy)
+    if n[-2:] == '.0':
+        n = n[:-2]
+    if n[0] != '-':
+        return ' ' + n
+    return n
+
+
+def print_matrix(A: list[list[float]], accuracy=8) -> None:  # Print beautiful matrix
+    n = len(A)
+    m = len(A[0])
+    A = [[simplify_number(A[i][j], accuracy) for j in range(m)] for i in range(n)]
+    len_of_element = [max([len(A[i][j]) for i in range(n)]) for j in range(m)]
+    for i in range(n):
+        print('⌈' if i == 0 else '⌊' if i + 1 == n else '|', end='')
+        for j in range(m):
+            print(A[i][j] + ' ' * (len_of_element[j] - len(A[i][j])), end='')
+            if j + 1 != m:
+                print('  ', end='')
+        print('⌉' if i == 0 else '⌋' if i + 1 == n else '|')
+
+
+def print_vector(m: list[float]) -> None:
+    print('x = (' + '; '.join(map(simplify_number, m)) + ')')
+
+
+def is_upper_triangular(m: list[list[float]]) -> bool:
     for i in range(len(m)):
-        c = '|'
-        if i == 0:
-            c = '⌈'
-        elif i + 1 == len(m):
-            c = '⌊'
-        print(c, end='')
-        for e in m[i][:-1]:
-            e = str(e)
-            print(e + ' ' * (len_of_element - len(e) + 2), end='')
-        if i == 0:
-            c = '⌉'
-        elif i + 1 == len(m):
-            c = '⌋'
-        print(str(m[i][-1]) + c)
+        for j in range(i):
+            if m[i][j] != 0:
+                return False
+    return True
 
 
-def det(m: list):  # Return determinant of matrix m
-    if len(m) == 1:
-        return m[0][0]
-    res = 0
-    for i in range(len(m)):
-        res += m[0][i] * (-1) ** i * det([m[j][:i] + m[j][i + 1:] for j in range(1, len(m))])
-    return res
+def to_upper_triangular(A: list[list[float]]) -> list[list[float]]:  # Straight running method Gauss
+    n = len(A)
+    m = len(A[0])
+    B = [A[i][:] for i in range(n)]
+    for k in range(n - 1):
+        ind_max = index_maximum(B, k)  # Swap rows with max element and first not zero
+        c = B[ind_max][:]
+        B[ind_max] = B[k]
+        B[k] = c
+        t = B[k][k]
+        for j in range(m):
+            B[k][j] /= t
+        for i in range(k + 1, n):
+            for j in range(m - 1, k - 1, -1):
+                B[i][j] -= B[k][j] * B[i][k]
+    return B
 
 
-def index_maximum(m: list, k: int):  # Return index of row with maximum element in kth column
+def det(m: list[list[float]]) -> float:  # Return determinant of matrix m
+    if is_upper_triangular(m):
+        res = 1
+        for i in range(len(m)):
+            res *= m[i][i]
+        return res
+    return det(to_upper_triangular(m))
+
+
+def index_maximum(m: list[list[float]], k: int) -> int:  # Return index of row with maximum element in kth column
     res = k
     maximum = abs(m[k][k])
     for i in range(k + 1, len(m)):
@@ -36,28 +80,33 @@ def index_maximum(m: list, k: int):  # Return index of row with maximum element 
     return res
 
 
-def the_gauss_method(A: list, b: list):  # Gauss method with column maximum selection
+def inverse_matrix(A: list[list[float]]) -> list[list[float]]:
     n = len(A)
-    m = [[A[i][j] if j < len(A) else b[i] for j in range(len(A) + 1)] for i in range(len(A))]  # m = [A|b]
-    # We convert the matrix A to the upper triangular form
-    for k in range(n - 1):
-        # Swap rows with max element and first not zero
-        ind_max = index_maximum(m, k)
+    m = [[A[i][j] if j < n else 1 if i + n == j else 0 for j in range(2 * n)] for i in range(n)]  # m = [A|E]
+    for k in range(n):
+        ind_max = index_maximum(m, k)  # Swap rows with max element and first not zero
         c = m[ind_max][:]
         m[ind_max] = m[k]
         m[k] = c
-        for i in range(k + 1, n):
-            for j in range(n, k - 1, -1):
-                m[i][j] = m[i][j] * m[k][k] / m[i][k] - m[k][j]
+        t = m[k][k]
+        for j in range(2 * n):
+            m[k][j] /= t
+        for i in range(n):
+            if i != k:
+                for j in range(2 * n - 1, k - 1, -1):
+                    m[i][j] -= m[k][j] * m[i][k]
+    return [line[n:] for line in m]
+
+
+def the_gauss_method(A: list[list[float]], b: list[float]) -> list[float]:  # Gauss method with column maximum selection
+    n = len(A)
+    m = [[A[i][j] if j < len(A) else b[i] for j in range(len(A) + 1)] for i in range(len(A))]  # m = [A|b]
+    m = to_upper_triangular(m)  # Straight of gauss method
     # Calculating x
-    x = [0 for _ in range(n)]
+    x = [0.0 for _ in range(n)]
     for i in range(n - 1, -1, -1):
         x[i] = (m[i][n] - sum([m[i][j] * x[j] for j in range(i + 1, n)])) / m[i][i]
-    # Printing the response with an accuracy of 8 decimal
-    print(f'x = ({x[0]:.{8}f}', end='')
-    for e in x[1:]:
-        print(f' {e:.{8}f}', end='')
-    print(')')
+    return x
 
 
 def main():
@@ -71,7 +120,8 @@ def main():
         if det(A) == 0:  # Incorrect type of matrix
             print('This matrix is degenerate')
             return -1
-        the_gauss_method(A, b)
+        # print_vector(the_gauss_method(A, b))
+        print_matrix(inverse_matrix(A))
 
 
 def test():
@@ -80,8 +130,9 @@ def test():
          [0.54, 0.32, 1, 0.22],
          [0.66, 0.44, 0.22, 1]]
     b = [0.3, 0.5, 0.7, 0.9]
-    the_gauss_method(A, b)
+    # print_vector(the_gauss_method(A, b))
+    print_matrix(inverse_matrix(A))
 
 
 if __name__ == '__main__':
-    test()
+    main()
