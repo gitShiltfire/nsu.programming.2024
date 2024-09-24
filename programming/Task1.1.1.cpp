@@ -1,39 +1,11 @@
+/*
+ * version 1.2
+ */
+
 #include <iostream>
 
 using namespace std;
 
-class MatrixElement {  // For additional task
-public:
-    int *_data;
-
-    explicit MatrixElement(int *n) { _data = n; }
-
-    MatrixElement &operator=(int n) {
-        *_data = n;
-        return *this;
-    }
-
-    // In the likeness of an int
-    bool operator==(int n) const { *_data == n; }
-
-    bool operator>(int n) const { *_data > n; }
-
-    void operator+=(int n) const { *_data += n; }
-
-    void operator-=(int n) const { *_data -= n; }
-
-    void operator*=(int n) const { *_data *= n; }
-
-    void operator/=(int n) const { *_data /= n; }
-
-    int operator+(int n) const { return *_data + n; }
-
-    int operator-(int n) const { return *_data - n; }
-
-    int operator*(int n) const { return *_data * n; }
-
-    int operator/(int n) const { return *_data / n; }
-};
 
 class MatrixLine {  // For additional task
 private:
@@ -47,8 +19,8 @@ public:
 
     ~MatrixLine() { delete[] _data; }
 
-    MatrixElement operator[](int i) const {
-        return MatrixElement(_data[i]);
+    int &operator[](int i) const {
+        return *_data[i];
     }
 };
 
@@ -123,6 +95,7 @@ public:
         int **mData = m._data, **newData = new int *[_n];
         for (int i = 0; i < _n; ++i) {
             newData[i] = new int[_n];
+            for (int j = 0; j < _n; ++j) newData[i][j] = 0;
             for (int j = 0; j < _n; ++j) {
                 for (int k = 0; k < _n; ++k) {
                     newData[i][j] += _data[i][k] * mData[k][j];
@@ -242,7 +215,8 @@ void main_task() {
 
         ((A + B * C.transpose() + K) * D.transpose()).print();
 
-    } catch (invalid_argument &e) {
+    }
+    catch (invalid_argument &e) {
         cerr << e.what() << endl;
     }
 }
