@@ -1,18 +1,18 @@
 """
-version: 1.1
+version: 1.2
 Method Gauss
 Determinant
 Inverse matrix
---Run-throw method
+Run-throw method
 --Reflection method
 """
 
 
-def simplify_number(n: float, accuracy=8) -> str:
+def simplify_number(n: float, accuracy=8, sign_space=True) -> str:
     n = str(int(n * 10 ** accuracy) / 10 ** accuracy)
     if n[-2:] == '.0':
         n = n[:-2]
-    if n[0] != '-':
+    if sign_space and n[0] != '-':
         return ' ' + n
     return n
 
@@ -32,7 +32,7 @@ def print_matrix(A: list[list[float]], accuracy=8) -> None:  # Print beautiful m
 
 
 def print_vector(m: list[float]) -> None:
-    print('x = (' + '; '.join(map(simplify_number, m)) + ')')
+    print('x = (' + '; '.join(map(lambda x: simplify_number(x, sign_space=False), m)) + ')')
 
 
 def is_upper_triangular(m: list[list[float]]) -> bool:
@@ -100,12 +100,32 @@ def inverse_matrix(A: list[list[float]]) -> list[list[float]]:
 
 def the_gauss_method(A: list[list[float]], b: list[float]) -> list[float]:  # Gauss method with column maximum selection
     n = len(A)
-    m = [[A[i][j] if j < len(A) else b[i] for j in range(len(A) + 1)] for i in range(len(A))]  # m = [A|b]
+    m = [[A[i][j] if j < n else b[i] for j in range(n + 1)] for i in range(n)]  # m = [A|b]
     m = to_upper_triangular(m)  # Straight of gauss method
     # Calculating x
     x = [0.0 for _ in range(n)]
     for i in range(n - 1, -1, -1):
         x[i] = (m[i][n] - sum([m[i][j] * x[j] for j in range(i + 1, n)])) / m[i][i]
+    return x
+
+
+def run_throw_method(A: list[list[float]], b: list[float]) -> list[float]:  # A - triple diagonal matrix
+    n = len(A)
+    m = [[A[i][j] if j < len(A) else b[i] for j in range(n + 1)] for i in range(n)]  # m = [A|b]
+    for k in range(n - 1):
+        m[k][n] /= m[k][k]
+        for j in range(min(n - 1, k + 1), k - 1, -1):
+            m[k][j] /= m[k][k]
+        m[k + 1][n] -= m[k][n] * m[k + 1][k]
+        for j in range(min(n - 1, k + 1), k - 1, -1):
+            m[k + 1][j] -= m[k][j] * m[k + 1][k]
+    for j in range(n, n - 3, -1):
+        m[n - 1][j] /= m[n - 1][n - 1]
+    # Calculating x
+    x = [0.0 for _ in range(n)]
+    x[n - 1] = m[n - 1][n]
+    for i in range(n - 2, -1, -1):
+        x[i] = (m[i][n] - m[i][i + 1] * x[i + 1]) / m[i][i]
     return x
 
 
@@ -121,7 +141,8 @@ def main():
             print('This matrix is degenerate')
             return -1
         # print_vector(the_gauss_method(A, b))
-        print_matrix(inverse_matrix(A))
+        # print_matrix(inverse_matrix(A))
+        print_vector(run_throw_method(A, b))
 
 
 def test():
@@ -131,7 +152,8 @@ def test():
          [0.66, 0.44, 0.22, 1]]
     b = [0.3, 0.5, 0.7, 0.9]
     # print_vector(the_gauss_method(A, b))
-    print_matrix(inverse_matrix(A))
+    # print_matrix(inverse_matrix(A))
+    print_vector(run_throw_method(A, b))
 
 
 if __name__ == '__main__':
