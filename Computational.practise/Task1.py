@@ -1,5 +1,5 @@
 """
-version: 1.3
+version: 1.4
 Method Gauss
 Determinant
 Inverse matrix
@@ -8,24 +8,36 @@ Run-throw method
 """
 
 
-def simplify_number(n: float, accuracy=8, sign_space=True) -> str:
-    m = int(n * 10 ** accuracy) / 10 ** accuracy
-    if abs(m - int(m)) <= 10 ** (1 - accuracy):
-        return str(int(m))
-    if 1 - abs(m - int(m)) <= 10 ** (1 - accuracy):
-        return str(int(m + 0.5))
-    n = str(m)
-    if n[-2:] == '.0':
-        n = n[:-2]
-    if sign_space and n[0] != '-':
-        return ' ' + n
-    return n
+def minus_number(n: str):
+    if n[0] == '-':
+        return n
+    return ' ' + n
+
+
+def simplify_number(n: float, accuracy=8, sign_space=False) -> str:
+    m = str(int(n * 10 ** accuracy) / 10 ** accuracy)
+    if '.' in m and '9' in m:
+        a = m.rindex('9')
+        b = a
+        while b > 1 and m[b - 1] == '9':
+            b -= 1
+        if 2 * (a - b + 1) >= accuracy:
+            if m[b - 1] == '.':
+                m = str(int(m[:b - 1]) + 1)
+            else:
+                m = m[:b - 1] + str(int(m[b - 1]) + 1)
+    if abs(int(float(m)) - float(m)) < 10 ** (-accuracy // 4):
+        m = str(int(float(m)))
+    if sign_space:
+        return minus_number(m)
+    return m
 
 
 def print_matrix(A: list[list[float]], accuracy=8) -> None:  # Print beautiful matrix
     n = len(A)
     m = len(A[0])
-    A = [[simplify_number(A[i][j], accuracy) for j in range(m)] for i in range(n)]
+    A = [[simplify_number(A[i][j], accuracy, sign_space=any([A[i][j] < 0 for i in range(n)])) for j in range(m)]
+         for i in range(n)]
     len_of_element = [max([len(A[i][j]) for i in range(n)]) for j in range(m)]
     for i in range(n):
         print('⌈' if i == 0 else '⌊' if i + 1 == n else '|', end='')
@@ -37,7 +49,7 @@ def print_matrix(A: list[list[float]], accuracy=8) -> None:  # Print beautiful m
 
 
 def print_vector(m: list[float]) -> None:
-    print('x = (' + '; '.join(map(lambda x: simplify_number(x, sign_space=False), m)) + ')')
+    print('x = (' + '; '.join(map(simplify_number, m)) + ')')
 
 
 def is_upper_triangular(m: list[list[float]]) -> bool:
@@ -149,9 +161,7 @@ def main():
         # print_vector(the_gauss_method(A, b))
         # print_matrix(inverse_matrix(A))
         # print(det(A))
-        # print_vector(run_throw_method(A, b))
-        # print_matrix(to_upper_triangular(A))
-        # print(det(A))
+        print_vector(run_throw_method(A, b))
 
 
 def test():
