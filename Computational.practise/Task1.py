@@ -1,5 +1,5 @@
 """
-version: 1.2
+version: 1.3
 Method Gauss
 Determinant
 Inverse matrix
@@ -9,7 +9,12 @@ Run-throw method
 
 
 def simplify_number(n: float, accuracy=8, sign_space=True) -> str:
-    n = str(int(n * 10 ** accuracy) / 10 ** accuracy)
+    m = int(n * 10 ** accuracy) / 10 ** accuracy
+    if abs(m - int(m)) <= 10 ** (1 - accuracy):
+        return str(int(m))
+    if 1 - abs(m - int(m)) <= 10 ** (1 - accuracy):
+        return str(int(m + 0.5))
+    n = str(m)
     if n[-2:] == '.0':
         n = n[:-2]
     if sign_space and n[0] != '-':
@@ -52,21 +57,22 @@ def to_upper_triangular(A: list[list[float]]) -> list[list[float]]:  # Straight 
         c = B[ind_max][:]
         B[ind_max] = B[k]
         B[k] = c
+        if B[ind_max] != B[k]:
+            for j in range(m):
+                B[ind_max][j] *= -1
         t = B[k][k]
-        for j in range(m):
-            B[k][j] /= t
         for i in range(k + 1, n):
             for j in range(m - 1, k - 1, -1):
-                B[i][j] -= B[k][j] * B[i][k]
+                B[i][j] -= B[k][j] * B[i][k] / t
     return B
 
 
-def det(m: list[list[float]]) -> float:  # Return determinant of matrix m
+def det(m: list[list[float]]) -> str:  # Return determinant of matrix m
     if is_upper_triangular(m):
         res = 1
         for i in range(len(m)):
             res *= m[i][i]
-        return res
+        return simplify_number(res)
     return det(to_upper_triangular(m))
 
 
@@ -142,7 +148,10 @@ def main():
             return -1
         # print_vector(the_gauss_method(A, b))
         # print_matrix(inverse_matrix(A))
-        print_vector(run_throw_method(A, b))
+        # print(det(A))
+        # print_vector(run_throw_method(A, b))
+        # print_matrix(to_upper_triangular(A))
+        # print(det(A))
 
 
 def test():
