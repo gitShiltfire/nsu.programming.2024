@@ -1,17 +1,11 @@
 """
-version: 1.4
+version: 1.5
 Method Gauss
 Determinant
 Inverse matrix
 Run-throw method
 --Reflection method
 """
-
-
-def minus_number(n: str):
-    if n[0] == '-':
-        return n
-    return ' ' + n
 
 
 def simplify_number(n: float, accuracy=8, sign_space=False) -> str:
@@ -29,7 +23,7 @@ def simplify_number(n: float, accuracy=8, sign_space=False) -> str:
     if abs(int(float(m)) - float(m)) < 10 ** (-accuracy // 4):
         m = str(int(float(m)))
     if sign_space:
-        return minus_number(m)
+        return m if m[0] == '-' else ' ' + m
     return m
 
 
@@ -65,7 +59,7 @@ def to_upper_triangular(A: list[list[float]]) -> list[list[float]]:  # Straight 
     m = len(A[0])
     B = [A[i][:] for i in range(n)]
     for k in range(n - 1):
-        ind_max = index_maximum(B, k)  # Swap rows with max element and first not zero
+        ind_max = k + B[k:].index(max(B[k:], key=lambda x: x[k]))  # Swap rows with max element and first not zero
         c = B[ind_max][:]
         B[ind_max] = B[k]
         B[k] = c
@@ -88,21 +82,11 @@ def det(m: list[list[float]]) -> str:  # Return determinant of matrix m
     return det(to_upper_triangular(m))
 
 
-def index_maximum(m: list[list[float]], k: int) -> int:  # Return index of row with maximum element in kth column
-    res = k
-    maximum = abs(m[k][k])
-    for i in range(k + 1, len(m)):
-        if abs(m[i][k]) > maximum:
-            res = i
-            maximum = abs(m[i][k])
-    return res
-
-
 def inverse_matrix(A: list[list[float]]) -> list[list[float]]:
     n = len(A)
     m = [[A[i][j] if j < n else 1 if i + n == j else 0 for j in range(2 * n)] for i in range(n)]  # m = [A|E]
     for k in range(n):
-        ind_max = index_maximum(m, k)  # Swap rows with max element and first not zero
+        ind_max = k + m[k:].index(max(m[k:], key=lambda x: x[k]))  # Swap rows with max element and first not zero
         c = m[ind_max][:]
         m[ind_max] = m[k]
         m[k] = c
@@ -147,21 +131,47 @@ def run_throw_method(A: list[list[float]], b: list[float]) -> list[float]:  # A 
     return x
 
 
+def transpose(m: list[list[float]]) -> list[list[float]]:
+    return [[m[j][i] for j in range(len(m))] for i in range(len(m))]
+
+
+def norm_vector(v: list[float]) -> float:  # The norm 2
+    return sum(map(lambda x: x * x, v)) ** 0.5
+
+
+def scalar_vectors(a: list[float], b: list[float]) -> float:
+    if len(a) != len(b):
+        raise ValueError('Incorrect size of vector for scalar')
+    return sum([a[i] * b[i] for i in range(len(a))])
+
+
+def reflection_method(A: list[list[float]]) -> list[list[float]]:
+    n = len(A)
+    A = [line[:] for line in A]
+    for k in range(n - 1):
+        Ak = [[A[i][j] for j in range(k, n)] for i in range(k, n)]
+        # ind_max = transpose(Ak).index(max(transpose(Ak), key=norm_vector))
+        # Soon continued
+    return A
+
+
 def main():
-    with open('input.txt', 'r') as f:
-        n = int(f.readline())  # Input size of matrix nxn
-        A = [list(map(float, f.readline().split())) for _ in range(n)]  # Input matrix
-        b = list(map(float, f.readline().split()))  # Input vector b
-        if n != len(A) or n != len(b) or any([len(line) != n for line in A]):  # Incorrect size of A or b
-            print('Incorrect size')
-            return -1
-        if det(A) == 0:  # Incorrect type of matrix
-            print('This matrix is degenerate')
-            return -1
-        # print_vector(the_gauss_method(A, b))
-        # print_matrix(inverse_matrix(A))
-        # print(det(A))
-        print_vector(run_throw_method(A, b))
+    try:
+        with open('input.txt', 'r') as f:
+            n = int(f.readline())  # Input size of matrix nxn
+            A = [list(map(float, f.readline().split())) for _ in range(n)]  # Input matrix
+            b = list(map(float, f.readline().split()))  # Input vector b
+            if n != len(A) or n != len(b) or any([len(line) != n for line in A]):  # Incorrect size of A or b
+                raise ValueError('Incorrect size')
+            if det(A) == 0:  # Incorrect type of matrix
+                raise ValueError('This matrix is degenerate')
+            # print_vector(the_gauss_method(A, b))
+            # print_matrix(inverse_matrix(A))
+            # print(det(A))
+            # print_vector(run_throw_method(A, b))
+            reflection_method(A)
+    except Exception as e:
+        print(str(e.__class__)[8:-2] + ': ' + str(e))
 
 
 def test():
