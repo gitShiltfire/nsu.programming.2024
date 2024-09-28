@@ -57,20 +57,20 @@ def is_upper_triangular(m: list[list[float]]) -> bool:
 def to_upper_triangular(A: list[list[float]]) -> list[list[float]]:  # Straight running method Gauss
     n = len(A)
     m = len(A[0])
-    B = [A[i][:] for i in range(n)]
+    A = [A[i][:] for i in range(n)]
     for k in range(n - 1):
-        ind_max = k + B[k:].index(max(B[k:], key=lambda x: x[k]))  # Swap rows with max element and first not zero
-        c = B[ind_max][:]
-        B[ind_max] = B[k]
-        B[k] = c
-        if B[ind_max] != B[k]:
+        ind_max = k + A[k:].index(max(A[k:], key=lambda x: x[k]))  # Swap rows with max element and first not zero
+        c = A[ind_max][:]
+        A[ind_max] = A[k]
+        A[k] = c
+        if A[ind_max] != A[k]:
             for j in range(m):
-                B[ind_max][j] *= -1
-        t = B[k][k]
+                A[ind_max][j] *= -1
+        t = A[k][k]
         for i in range(k + 1, n):
             for j in range(m - 1, k - 1, -1):
-                B[i][j] -= B[k][j] * B[i][k] / t
-    return B
+                A[i][j] -= A[k][j] * A[i][k] / t
+    return A
 
 
 def det(m: list[list[float]]) -> str:  # Return determinant of matrix m
@@ -82,9 +82,9 @@ def det(m: list[list[float]]) -> str:  # Return determinant of matrix m
     return det(to_upper_triangular(m))
 
 
-def inverse_matrix(A: list[list[float]]) -> list[list[float]]:
-    n = len(A)
-    m = [[A[i][j] if j < n else 1 if i + n == j else 0 for j in range(2 * n)] for i in range(n)]  # m = [A|E]
+def inverse_matrix(m: list[list[float]]) -> list[list[float]]:
+    n = len(m)
+    m = [[m[i][j] if j < n else 1 if i + n == j else 0 for j in range(2 * n)] for i in range(n)]  # m = [A|E]
     for k in range(n):
         ind_max = k + m[k:].index(max(m[k:], key=lambda x: x[k]))  # Swap rows with max element and first not zero
         c = m[ind_max][:]
@@ -102,12 +102,12 @@ def inverse_matrix(A: list[list[float]]) -> list[list[float]]:
 
 def the_gauss_method(A: list[list[float]], b: list[float]) -> list[float]:  # Gauss method with column maximum selection
     n = len(A)
-    m = [[A[i][j] if j < n else b[i] for j in range(n + 1)] for i in range(n)]  # m = [A|b]
-    m = to_upper_triangular(m)  # Straight of gauss method
+    A = [[A[i][j] if j < n else b[i] for j in range(n + 1)] for i in range(n)]  # m = [A|b]
+    A = to_upper_triangular(A)  # Straight of gauss method
     # Calculating x
     x = [0.0 for _ in range(n)]
     for i in range(n - 1, -1, -1):
-        x[i] = (m[i][n] - sum([m[i][j] * x[j] for j in range(i + 1, n)])) / m[i][i]
+        x[i] = (A[i][n] - sum([A[i][j] * x[j] for j in range(i + 1, n)])) / A[i][i]
     return x
 
 
@@ -145,14 +145,14 @@ def scalar_vectors(a: list[float], b: list[float]) -> float:
     return sum([a[i] * b[i] for i in range(len(a))])
 
 
-def reflection_method(A: list[list[float]]) -> list[list[float]]:
-    n = len(A)
-    A = [line[:] for line in A]
+def reflection_method(m: list[list[float]]) -> list[list[float]]:
+    n = len(m)
+    m = [line[:] for line in m]
     for k in range(n - 1):
-        Ak = [[A[i][j] for j in range(k, n)] for i in range(k, n)]
+        Ak = [[m[i][j] for j in range(k, n)] for i in range(k, n)]
         # ind_max = transpose(Ak).index(max(transpose(Ak), key=norm_vector))
         # Soon continued
-    return A
+    return m
 
 
 def main():
@@ -169,7 +169,7 @@ def main():
             # print_matrix(inverse_matrix(A))
             # print(det(A))
             # print_vector(run_throw_method(A, b))
-            reflection_method(A)
+            # reflection_method(A)
     except Exception as e:
         print(str(e.__class__)[8:-2] + ': ' + str(e))
 
