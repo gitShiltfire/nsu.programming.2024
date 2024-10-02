@@ -1,10 +1,10 @@
 """
-version: 1.5
-Method Gauss
-Determinant
-Inverse matrix
+version: 1.6
+Gauss method
+Determinant(with upper triangular form)
+Inverse matrix(with extended matrix form)
 Run-throw method
---Reflection method
+Reflection method(Householder's)
 """
 
 
@@ -100,7 +100,16 @@ def inverse_matrix(m: list[list[float]]) -> list[list[float]]:
     return [line[n:] for line in m]
 
 
+def check_correct_ax_b(m: list[list[float]], b: list[float]) -> None:
+    n = len(m)
+    if n != len(b) or any([len(line) != n for line in m]):  # Incorrect size of A or b
+        raise ValueError('Incorrect size')
+    if det(m) == 0:  # Incorrect type of matrix
+        raise ValueError('This matrix is degenerate')
+
+
 def the_gauss_method(A: list[list[float]], b: list[float]) -> list[float]:  # Gauss method with column maximum selection
+    check_correct_ax_b(A, b)
     n = len(A)
     A = [[A[i][j] if j < n else b[i] for j in range(n + 1)] for i in range(n)]  # m = [A|b]
     A = to_upper_triangular(A)  # Straight of gauss method
@@ -111,9 +120,9 @@ def the_gauss_method(A: list[list[float]], b: list[float]) -> list[float]:  # Ga
     return x
 
 
-def run_throw_method(A: list[list[float]], b: list[float]) -> list[float]:  # A - triple diagonal matrix
-    n = len(A)
-    m = [[A[i][j] if j < len(A) else b[i] for j in range(n + 1)] for i in range(n)]  # m = [A|b]
+def run_throw_method(m: list[list[float]], b: list[float]) -> list[float]:  # A - triple diagonal matrix
+    n = len(m)
+    m = [[m[i][j] if j < n else b[i] for j in range(n + 1)] for i in range(n)]  # m = [A|b]
     for k in range(n - 1):
         m[k][n] /= m[k][k]
         for j in range(min(n - 1, k + 1), k - 1, -1):
@@ -131,28 +140,54 @@ def run_throw_method(A: list[list[float]], b: list[float]) -> list[float]:  # A 
     return x
 
 
-def transpose(m: list[list[float]]) -> list[list[float]]:
-    return [[m[j][i] for j in range(len(m))] for i in range(len(m))]
+'''def transpose(m: list[list[float]]) -> list[list[float]]:
+    return [[m[j][i] for j in range(len(m))] for i in range(len(m))]'''
+
+'''def scalar_multiplication(a: list[float], b: list[float]) -> float:
+        if len(a) != len(b):
+            raise ValueError('Incorrect size of vector by scalar multiplication')
+        return sum([a[i] * b[i] for i in range(len(a))])'''
 
 
-def norm_vector(v: list[float]) -> float:  # The norm 2
-    return sum(map(lambda x: x * x, v)) ** 0.5
+def reflection_method(m: list[list[float]], b: list[float]) -> list[float]:
+    def norm_vector(v: list[float]) -> float:  # The norm 2
+        return sum(map(lambda q: q * q, v)) ** 0.5
 
+    def vvt_multiplication(q: list[float], p: list[float]) -> list[list[float]]:
+        if len(q) != len(p):
+            raise ValueError('Incorrect size of vector by v*vT multiplication')
+        return [[q[i] * p[j] for j in range(len(p))] for i in range(len(q))]
 
-def scalar_vectors(a: list[float], b: list[float]) -> float:
-    if len(a) != len(b):
-        raise ValueError('Incorrect size of vector for scalar')
-    return sum([a[i] * b[i] for i in range(len(a))])
+    def sign(q: float) -> int:
+        return 1 if q > 0 else 0 if q == 0 else -1
 
+    def matrix_div(q: list[list[float]], p: list[list[float]]) -> list[list[float]]:
+        return [[q[i][j] - p[i][j] for j in range(len(q))] for i in range(len(q))]
 
-def reflection_method(m: list[list[float]]) -> list[list[float]]:
+    def matrix_mul(q: list[list[float]], p: list[list[float]]):
+        return [[sum([q[i][kk] * p[kk][j] for kk in range(len(p))]) for j in range(len(p[0]))] for i in range(len(q))]
+
+    check_correct_ax_b(m, b)
     n = len(m)
-    m = [line[:] for line in m]
+    m = [[m[i][j] if j < n else b[i] for j in range(n + 1)] for i in range(n)]  # m = [A|b]
     for k in range(n - 1):
-        Ak = [[m[i][j] for j in range(k, n)] for i in range(k, n)]
-        # ind_max = transpose(Ak).index(max(transpose(Ak), key=norm_vector))
-        # Soon continued
-    return m
+        Enk = [[1 if i == j else 0 for j in range(n - k)] for i in range(n - k)]
+        rk = norm_vector([m[i][k] for i in range(k, n)])
+        if rk != 0:
+            t = [m[i][k] for i in range(k, n)]
+            t[0] -= rk * sign(m[k][k])
+            norm_t = norm_vector(t)
+            w = [t[i] / norm_t for i in range(n - k)]
+            W = vvt_multiplication([2 * w[j] for j in range(len(w))], w)
+            Ank = matrix_div(Enk, W)
+            Hk = [[1 if i == j and i < k else Ank[i - k][j - k] if i >= k and j >= k else 0 for j in range(n)]
+                  for i in range(n)]
+            m = matrix_mul(Hk, m)
+    # Calculating x
+    x = [0.0 for _ in range(n)]
+    for i in range(n - 1, -1, -1):
+        x[i] = (m[i][n] - sum([m[i][j] * x[j] for j in range(i + 1, n)])) / m[i][i]
+    return x
 
 
 def main():
@@ -161,28 +196,14 @@ def main():
             n = int(f.readline())  # Input size of matrix nxn
             A = [list(map(float, f.readline().split())) for _ in range(n)]  # Input matrix
             b = list(map(float, f.readline().split()))  # Input vector b
-            if n != len(A) or n != len(b) or any([len(line) != n for line in A]):  # Incorrect size of A or b
-                raise ValueError('Incorrect size')
-            if det(A) == 0:  # Incorrect type of matrix
-                raise ValueError('This matrix is degenerate')
+
             # print_vector(the_gauss_method(A, b))
             # print_matrix(inverse_matrix(A))
             # print(det(A))
             # print_vector(run_throw_method(A, b))
-            # reflection_method(A)
+            print_vector(reflection_method(A, b))
     except Exception as e:
         print(str(e.__class__)[8:-2] + ': ' + str(e))
-
-
-def test():
-    A = [[1, 0.42, 0.54, 0.66],
-         [0.42, 1, 0.32, 0.44],
-         [0.54, 0.32, 1, 0.22],
-         [0.66, 0.44, 0.22, 1]]
-    b = [0.3, 0.5, 0.7, 0.9]
-    # print_vector(the_gauss_method(A, b))
-    # print_matrix(inverse_matrix(A))
-    print_vector(run_throw_method(A, b))
 
 
 if __name__ == '__main__':
