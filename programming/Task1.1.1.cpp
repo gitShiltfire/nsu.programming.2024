@@ -1,7 +1,3 @@
-/*
- * version 1.2
- */
-
 #include <iostream>
 
 using namespace std;
